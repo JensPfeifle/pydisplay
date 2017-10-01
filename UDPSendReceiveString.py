@@ -34,13 +34,25 @@ def make_data_to_send(row0, row1, row2, row3):
     """
     input_data = [row0, row1, row2, row3]
     data_to_send = ''
+    print ('--------------------')
     for data in input_data:
         if len(data) > 20:
             print('Data too long for one row!')
             data = '{:<20}'.format('invalid data')
         else:
             data_to_send = data_to_send + '{:<20}'.format(data)
+            print (data)
+    print ('--------------------')
     return data_to_send
+
+def update_LCD(data_to_send, print_ack = False):
+    if (len(data_to_send) != 80):
+        print ("update_LCD: incorrect data size")
+    else:
+        sock.sendto(data_to_send, (RECEIVER_IP, RECEIVER_PORT))
+        received_data, from_socket = sock.recvfrom(BUFFER_SIZE)
+        if (print_ack): print("{} from {}".format(received_data,from_socket))
+        return
 
 UPDATE_INTERVAL = 1.000  # intveral betwen display updates in seconds
 if __name__ == '__main__':
@@ -48,9 +60,7 @@ if __name__ == '__main__':
     n = 1
     while True:
         data_to_send = make_data_to_send('row1', '', '', 'increment {}'.format(n))
-        sock.sendto(data_to_send, (RECEIVER_IP, RECEIVER_PORT))
-        received_data, from_socket = sock.recvfrom(BUFFER_SIZE)
-        print("Received: {} from {}".format(received_data,from_socket))
+        update_LCD(data_to_send)
         t_inc = t_inc + UPDATE_INTERVAL
         n = n + 1
         time.sleep(max(0, t_inc - time.time()))
