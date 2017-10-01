@@ -1,18 +1,18 @@
 /*
 
   The circuit:
- * LCD RS pin to digital pin 7
- * LCD Enable pin to digital pin 6
- * LCD D4 pin to digital pin 5
- * LCD D5 pin to digital pin 4
- * LCD D6 pin to digital pin 3
- * LCD D7 pin to digital pin 2
- * LCD R/W pin to ground
- * LCD VSS pin to ground
- * LCD VCC pin to 5V
- * 10K resistor:
- * ends to +5V and ground
- * wiper to LCD VO pin (pin 3)
+   LCD RS pin to digital pin 7
+   LCD Enable pin to digital pin 6
+   LCD D4 pin to digital pin 5
+   LCD D5 pin to digital pin 4
+   LCD D6 pin to digital pin 3
+   LCD D7 pin to digital pin 2
+   LCD R/W pin to ground
+   LCD VSS pin to ground
+   LCD VCC pin to 5V
+   10K resistor:
+   ends to +5V and ground
+   wiper to LCD VO pin (pin 3)
 
 */
 #include <SPI.h>         // needed for Arduino versions later than 0018
@@ -33,6 +33,7 @@ byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
 };
 IPAddress ip(192, 168, 2, 2);
+
 unsigned int localPort = 8888;      // local port to listen on
 
 // buffers for receiving and sending data
@@ -56,7 +57,7 @@ void setup() {
 }
 
 void loop() {
-     // if there's data available, read a packet
+  // if there's data available, read a packet
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Serial.print("Received packet of size ");
@@ -85,7 +86,7 @@ void loop() {
       char lineTwo[columns + 1] = {};
       char lineThree[columns + 1] = {};
       char lineFour[columns + 1] = {};
-      
+
       int i = 0;
       while (i < columns) {
         lineOne[i] = packetBuffer[i];
@@ -93,34 +94,34 @@ void loop() {
       }
       Serial.print("lineOne:");
       Serial.println(lineOne);
-      
+
       int n = 0;
       do  {
         lineTwo[n] = packetBuffer[i];
         n++;
         i++;
-        } while (i < columns*2);
+      } while (i < columns * 2);
       Serial.print("lineTwo:");
       Serial.println(lineTwo);
-      
+
       n = 0;
       do {
         lineThree[n] = packetBuffer[i];
         n++;
         i++;
-      } while (i < columns*3);
+      } while (i < columns * 3);
       Serial.print("lineThree:");
       Serial.println(lineThree);
-      
+
       n = 0;
       do {
         lineFour[n] = packetBuffer[i];
         n++;
         i++;
-      } while (i < columns*4);
+      } while (i < columns * 4);
       Serial.print("lineFour:");
-      Serial.println(lineFour);      
-      
+      Serial.println(lineFour);
+
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(lineOne);
@@ -131,14 +132,13 @@ void loop() {
       lcd.setCursor(0, 3);
       lcd.print(lineFour);
     }
-    //if (false) {
-      // send a reply to the IP address and port that sent us the packet we received
-      Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-      Udp.write(ReplyBuffer);
-      Udp.endPacket();
-    //}
+    // send a reply to the IP address and port that sent us the packet we received
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(ReplyBuffer);
+    Udp.endPacket();
     //finally, clear packet buffer
     memset(packetBuffer, 0, sizeof(packetBuffer));
   }
   delay(10);
 }
+
