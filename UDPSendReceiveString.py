@@ -16,8 +16,7 @@ sock.bind((UDP_IP, UDP_PORT))
 def check_site_status(url, protocol='HTTPS'):
     """"
     Connects to a site, requests the header and returns the status.
-    Returntype: tuple
-    Returns: statuscode, status
+    Returns a tuple of strings: statuscode, status
     """
     print ("Checking {}".format(url))
     if protocol == 'HTTP':
@@ -28,17 +27,31 @@ def check_site_status(url, protocol='HTTPS'):
     r1 = conn.getresponse()
     return r1.status, r1.reason
 
+def make_data_to_send(row0, row1, row2, row3):
+    """
+    Combines 4 strings into a single data string to send via UDP
+    Returns a string of 80 chars (4x20 bytes)
+    """
+    input_data = [row0, row1, row2, row3]
+    data_to_send = ''
+    for data in input_data:
+        if len(data) > 20:
+            print('Data too long for one row!')
+            data = '{:<20}'.format('invalid data')
+        else:
+            data_to_send = data_to_send + '{:<20}'.format(data)
+    return data_to_send
+
+UPDATE_INTERVAL = 1.000  # intveral betwen display updates in seconds
 if __name__ == '__main__':
+    t_inc = time.time()
+    n = 1
     while True:
-        data = ''
-        for n in range(0,4):
-            input_data = raw_input('Row{}:'.format(n))
-            if len(input_data) < 20:
-                data = data + '{:^20}'.format(input_data)
-            else: print('Data too long for one row!')
-        print ("Sending:{}".format(data))
-        data_to_send = data
+        data_to_send = make_data_to_send('row1', '', '', 'increment {}'.format(n))
         sock.sendto(data_to_send, (RECEIVER_IP, RECEIVER_PORT))
         received_data, from_socket = sock.recvfrom(BUFFER_SIZE)
         print("Received: {} from {}".format(received_data,from_socket))
+        t_inc = t_inc + UPDATE_INTERVAL
+        n = n + 1
+        time.sleep(max(0, t_inc - time.time()))
     sock.close()
