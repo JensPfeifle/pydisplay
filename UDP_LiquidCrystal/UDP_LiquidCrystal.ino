@@ -132,10 +132,12 @@ void loop() {
       lcd.setCursor(0, 3);
       lcd.print(lineFour);
     }
-    // send a reply to the IP address and port that sent us the packet we received
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBuffer);
-    Udp.endPacket();
+    if (false) {
+      // send a reply to the IP address and port that sent us the packet we received
+      Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+      Udp.write(ReplyBuffer);
+      Udp.endPacket();
+    }
     //finally, clear packet buffer
     memset(packetBuffer, 0, sizeof(packetBuffer));
   }
