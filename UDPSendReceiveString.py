@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# coding: utf8
 import socket
 import time
 import httplib
@@ -31,9 +33,17 @@ def check_site_status(url, protocol='HTTPS'):
     r1 = conn.getresponse()
     return r1.status, r1.reason
 
-def netdata_api_request(host='jens.pfeifle.com/netdata', chart='system.cpu'):
-    r = requests.get('http://{}/api/v1/data?chart={}&after=-16&before=0&points=16&group=average&format=json&options=seconds'
-                    .format(host, chart))
+def netdata_api_request(host, chart='system.cpu', after=-1, before=0, points=1):
+    """"
+    Make a request to the Netdata API and return as a json file.
+    host: given with protokoll and w/o trailing slash, i.e. 'http://my.host'
+    chart: chart.id as given by 'charts' call
+    after: after which point to get data (negative num is relative, in the past)
+    before: up to which point to get data
+    points: number of points to get
+    """
+    r = requests.get('{0}/api/v1/data?chart={1}&after={2}&before={3}&points={4}&group=average&format=json&options=seconds'
+                    .format(host, chart, after, before, points))
     if r.status_code != 200:
         print ("Status not 200: code {}".format(r.status_code))
     else:
@@ -69,36 +79,72 @@ def update_LCD(data_to_send, print_ack = False):
             print("{} from {}".format(received_data,from_socket))
         return True
 
-def num_to_bar(value, minval=0, maxval=1.0):
-    bar_symbol = '='
+def num_to_bar(value, minval=0, maxval=1.0, max_len=20):
+    bar_symbol = '\xff'
     fraction_value = value/(maxval - minval)  # careful floor division
-    bar_length = int(round(fraction_value * 20,0))
+    bar_length = int(round(fraction_value * max_len))
     bar = ''
     for n in range(bar_length):
         bar = bar + bar_symbol
     return bar
 
-UPDATE_INTERVAL = 1.000  # intveral betwen display updates in seconds
-HOST = 'localhost:19999'
+UPDATE_INTERVAL = 1.0  # interval betwen display updates in seconds
+#HOST = 'http://localhost:19999'
+HOST = r'http://unjens:19999'
+HOST_STR = 'UnJens'
 if __name__ == '__main__':
     t_inc = time.time()
     n = 1
     while True:
+        t0 = time.time()
         # cpu data
         data_cpu = netdata_api_request(host=HOST,chart='system.cpu')
         sum_cpu = round(sum(data_cpu['data'][0][1:]),2)
+        # mem_data
+        data_mem = netdata_api_request(host=HOST,chart='system.ram')
+        used_mem = int(round(data_mem['data'][0][2]))
         # ipv4 network data
         data_ipv4 = netdata_api_request(host=HOST, chart='system.ipv4')
         ipv4_in = int(round(data_ipv4['data'][0][1],0))
         ipv4_out = int(abs(round(data_ipv4['data'][0][2],0)))
         #
-        data_to_send = make_data_to_send(HOST,
-                                        'i:{:>5} o:{:>5} kb/s'.format(ipv4_in, ipv4_out),
-                                        num_to_bar(sum_cpu,maxval=100.0),
-                                        '{}'.format(time.strftime("%d/%m/%y %H:%M:%S"))
+        disks = ['sdb','sdc','sdd','sde']
+        active = {}
+        for d in disks:
+            ddata = netdata_api_request(host=HOST, chart='disk_util.{}'.format(d), after=-1, points=1)  # average over the last 10 seconds
+            active_pp = ddata['data'][0][1]
+            if (active_pp > 80.0):
+                active[d] = '\x05'
+            elif (active_pp > 50.0):
+                active[d] = '\x04'
+            elif (active_pp > 20.0):
+                active[d] = '\x03'
+            elif (active_pp > 5.0):
+                active[d] = '\x02'
+            elif (active_pp > 1.0):
+                active[d] = '\x01'
+            else:
+                active[d] = '\x06'
+        t_req = (time.time() - t0)
+        print ('Requests took:{} ms'.format(t_req * 1000))
+        if (t_req > UPDATE_INTERVAL):
+            time.sleep(t_req*1.5)
+            t_inc = t_inc + t_req + t_req*1.5
+        data_to_send = make_data_to_send('{:^20}'.format(
+                                        HOST_STR + ' ' + time.strftime("%H:%M:%S")),
+                                        'CPU:{:2.0f} MEM:{:5.0f}MB'.format(sum_cpu, used_mem),
+                                        'D1'+active['sdc']+' C'+active['sdd'] + ' in: {:>5}kbs'.format(ipv4_in),
+                                        'D2'+active['sdb']+' P'+active['sde'] + ' out:{:>5}kbs'.format(ipv4_out)
                                         )
         if (LCD_CONNECTED): update_LCD(data_to_send)
         t_inc = t_inc + UPDATE_INTERVAL
         n = n + 1
         time.sleep(max(0, t_inc - time.time()))
+        print ('Complete cycle took:{} s'.format(time.time() - t0))
     sock.close()
+
+    """ Parked expressions:
+    '{}'.format(time.strftime("%d/%m/%y %H:%M:%S"))
+    BLOCK '\xff'
+    custom chars ' '+'\x01'+'\x02'+'\x03'+'\x04'+'\x05'+'\x06'+'\x07'
+    """
