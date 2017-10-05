@@ -8,10 +8,10 @@ import requests
 LCD_CONNECTED = True
 
 BUFFER_SIZE = 1024
-UDP_IP = '192.168.2.1'
+UDP_IP = '10.0.1.8'
 UDP_PORT = 6000
 
-RECEIVER_IP = '192.168.2.2'
+RECEIVER_IP = '10.0.1.3'
 RECEIVER_PORT = 8888
 
 if LCD_CONNECTED:
@@ -133,8 +133,8 @@ if __name__ == '__main__':
         data_to_send = make_data_to_send('{:^20}'.format(
                                         HOST_STR + ' ' + time.strftime("%H:%M:%S")),
                                         'CPU:{:2.0f} MEM:{:5.0f}MB'.format(sum_cpu, used_mem),
-                                        'D1'+active['sdc']+' C'+active['sdd'] + ' in: {:>5}kbs'.format(ipv4_in),
-                                        'D2'+active['sdb']+' P'+active['sde'] + ' out:{:>5}kbs'.format(ipv4_out)
+                                        'D1'+active['sdc']+' C'+active['sdd'] + ' in:{:>6} kbs'.format(ipv4_in),
+                                        'D2'+active['sdb']+' P'+active['sde'] + ' out:{:>5} kbs'.format(ipv4_out)
                                         )
         if (LCD_CONNECTED): update_LCD(data_to_send)
         t_inc = t_inc + UPDATE_INTERVAL
